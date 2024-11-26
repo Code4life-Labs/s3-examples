@@ -51,6 +51,27 @@ const ErrorUtils = {
       if (result) return res.status(result.code).json(result);
     }
   },
+
+  /**
+   * Use this function to handle error in streamming response, if there
+   * is any error, return JSON Response.
+   * @param ctx
+   * @param res
+   * @param fn
+   * @returns
+   */
+  async handleResponseError(ctx, res, fn) {
+    try {
+      await fn.call(ctx);
+    } catch (error) {
+      const result = HTTPUtils.generateHTTPResponseData(
+        404,
+        null,
+        "File not found"
+      );
+      return res.status(result.code).json(result);
+    }
+  },
 };
 
 module.exports = { ErrorUtils };

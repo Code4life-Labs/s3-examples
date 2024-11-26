@@ -5,14 +5,15 @@ const fs = require("fs");
 const path = require("path");
 
 // Import configs
-const configs = require("../configs");
+const configs = require("src/configs");
+
+// Import utils
+const { ErrorUtils } = require("src/utils/error");
+const { HTTPUtils } = require("src/utils/http");
 
 // Get path of endpoints folder
 const rootFolder = "endpoints";
 const rootPath = path.resolve(`./src/${rootFolder}`);
-
-// Import utils
-const { ErrorUtils } = require("../utils/error");
 
 /**
  * Use to check if `path` is in `black list`.
@@ -102,7 +103,7 @@ function getModule(p) {
 
   return {
     middlewares: module.middlewares,
-    handler: (res, req) => module.handler(res, req, { ErrorUtils }),
+    handler: (res, req) => module.handler(res, req, { ErrorUtils, HTTPUtils }),
     method,
     endpoint,
   };
