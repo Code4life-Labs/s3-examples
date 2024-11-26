@@ -9,8 +9,16 @@ const configs = require("../configs");
 
 // Get path of endpoints folder
 const rootFolder = "endpoints";
-const endpointsPath = path.resolve(`./src/${rootFolder}`);
+const rootPath = path.resolve(`./src/${rootFolder}`);
 
+// Import utils
+const { ErrorUtils } = require("../utils/error");
+
+/**
+ * Use to check if `path` is in `black list`.
+ * @param {string} path
+ * @returns
+ */
 function isInBlackList(path) {
   for (const restrict of configs.blacklistOfEndpoints) {
     if (path.includes(restrict)) return true;
@@ -18,9 +26,15 @@ function isInBlackList(path) {
   return false;
 }
 
-async function readDir(startPath, fn = (files) => files) {
+/**
+ * Use to get paths of content in `pathDir` directory.
+ * @param {string} pathDir
+ * @param {Function} fn
+ * @returns
+ */
+async function readDir(pathDir, fn = (files) => files) {
   return new Promise((resolve, reject) => {
-    fs.readdir(startPath, function (err, files) {
+    fs.readdir(pathDir, function (err, files) {
       // Skip error
       if (err) return;
       resolve(fn(files));
@@ -28,6 +42,12 @@ async function readDir(startPath, fn = (files) => files) {
   });
 }
 
+/**
+ * Use to get path to files of directory recursively, including sub directory.
+ * @param {string} startPath
+ * @param {Array<string>} accumulation
+ * @returns
+ */
 async function getAllPathsToFiles(startPath, accumulation = []) {
   const files = await readDir(startPath);
 
@@ -48,6 +68,10 @@ async function getAllPathsToFiles(startPath, accumulation = []) {
   return accumulation;
 }
 
+/**
+ * Get module from `p`, design for endpoint code
+ * @param {string} p
+ */
 function getModule(p) {
   // Convert \\ to / if needed
   let parts;
@@ -56,31 +80,50 @@ function getModule(p) {
 
   const module = require(p);
   const lastEndpointItem = parts[parts.length - 1];
-  let trueLastEndpointItem;
-
-  if ((trueLastEndpointItem = lastEndpointItem.match(/\[(\w+)\]/)[1])) {
-    // Match [\w+]
-    trueLastEndpointItem = ":" + trueLastEndpointItem;
-  }
+  const [method, rest] = lastEndpointItem.split(".");
 
   // Get endpoint
-  let endpoint = "/" + trueLastEndpointItem;
+  let endpoint = "";
   let i = parts.length - 2;
+  let matchedPattern = null;
   while (rootFolder != parts[i]) {
-    endpoint = "/" + parts[i] + endpoint;
+    matchedPattern = parts[i].match(/\[(\w+)\]/);
+
+    // Match [\w+]
+    if (matchedPattern) {
+      endpoint = "/" + ":" + matchedPattern[1] + endpoint;
+      matchedPattern = null;
+    } else {
+      endpoint = "/" + parts[i] + endpoint;
+    }
+
     i--;
   }
 
-  console.log("Endpoint:", endpoint);
-  // Set up endpoints' handler
+  return {
+    middlewares: module.middlewares,
+    handler: (res, req) => module.handler(res, req, { ErrorUtils }),
+    method,
+    endpoint,
+  };
 }
 
-getAllPathsToFiles(endpointsPath).then((paths) => {
-  for (const path of paths) {
-    getModule(path);
-  }
-});
-
 module.exports = {
-  buildEndpoints(router) {},
+  async buildEndpoints(router) {
+    const fullPaths = await getAllPathsToFiles(rootPath);
+    const _modules = [];
+
+    for (const path of fullPaths) {
+      const moduleMetadata = getModule(path);
+      _modules.push(moduleMetadata);
+
+      router[moduleMetadata.method](
+        moduleMetadata.endpoint,
+        ...moduleMetadata.middlewares,
+        moduleMetadata.handler
+      );
+    }
+
+    console.table(_modules);
+  },
 };
