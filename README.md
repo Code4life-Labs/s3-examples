@@ -25,6 +25,10 @@ We'll do these features by several examples.
 
 Let's learn with me!
 
+## How to use?
+
+All of instructions are in `examples` folder, follow those steps and enjoy.
+
 ## Author
 
 built & scripted by Nguyen Anh Tuan (Tuna Nguyen)

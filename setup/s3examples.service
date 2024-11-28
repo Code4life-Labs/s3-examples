@@ -1,0 +1,11 @@
+[Unit]
+Description=S3 Example Server
+After=network.target
+
+[Service]
+ExecStart=/path/to/npm start
+WorkingDirectory=/opt/s3-examples
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
