@@ -3,9 +3,10 @@ Description=S3 Example Server
 After=network.target
 
 [Service]
-ExecStart=/path/to/npm start
+ExecStart=NODE_PATH /opt/s3-examples/src/index.js
 WorkingDirectory=/opt/s3-examples
 Restart=always
+User=ubuntu
 
 [Install]
 WantedBy=multi-user.target
